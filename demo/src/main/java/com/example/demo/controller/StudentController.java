@@ -1,22 +1,60 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.DemoStudent;
-import com.example.demo.service.StudentService;
+import com.example.demo.entity.DemoStudent;
+import com.example.demo.repository.StudentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import java.util.*;
+
+import java.util.List;
 
 @RestController
-@RequestMapping("/DemoStudent")
+@RequestMapping("/students")
 public class StudentController {
 
-    private final StudentService studentService;
+    private final StudentRepository studentRepository;
 
-    public StudentController(StudentService studentService) {
-        this.studentService = studentService;
+    @Autowired
+    public StudentController(StudentRepository studentRepository) {
+        this.studentRepository = studentRepository;
     }
 
-    @GetMapping("/list")
-    public List<DemoStudent> getStudents() {
-        return studentService.getAllStudents();
+    // ✅ READ: ดึงข้อมูลนักเรียนทั้งหมด
+    @GetMapping
+    public List<DemoStudent> getAllStudents() {
+        return studentRepository.findAll();
+    }
+
+    // ✅ CREATE: เพิ่มนักเรียนใหม่
+    @PostMapping
+    public DemoStudent createStudent(@RequestBody DemoStudent student) {
+        return studentRepository.save(student);
+    }
+
+    // ✅ UPDATE: แก้ไขนักเรียนตาม id
+    @PutMapping("/{id}")
+    public DemoStudent updateStudent(@PathVariable Long id, @RequestBody DemoStudent newStudent) {
+        return studentRepository.findById(id).map(student -> {
+            student.setName(newStudent.getName());
+            student.setSurname(newStudent.getSurname());
+            student.setAge(newStudent.getAge());
+            return studentRepository.save(student);
+        }).orElseThrow(() -> new RuntimeException("ไม่พบนักเรียนรหัส: " + id));
+    }
+
+    // ✅ DELETE: ลบนักเรียนตาม id
+    @DeleteMapping("/{id}")
+    public String deleteStudent(@PathVariable Long id) {
+        if (!studentRepository.existsById(id)) {
+            throw new RuntimeException("ไม่พบนักเรียนรหัส: " + id);
+        }
+        studentRepository.deleteById(id);
+        return "ลบนักเรียนรหัส " + id + " เรียบร้อยแล้ว";
+    }
+    @GetMapping("/filter")
+    public List<DemoStudent> filterStudentsByAge(
+            @RequestParam int minAge,
+            @RequestParam int maxAge
+    ) {
+        return studentRepository.findByAgeBetween(minAge, maxAge);
     }
 }

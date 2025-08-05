@@ -1,0 +1,38 @@
+package com.example.demo.controller;
+
+import com.example.demo.model.DemoStudent;
+import com.example.demo.service.StudentService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/student")
+public class StudentController {
+
+    @Autowired
+    private StudentService service;
+
+    @GetMapping
+    public List<DemoStudent> getAllStudents() {
+        return service.getAllStudents();
+    }
+
+    @PostMapping
+    public DemoStudent createStudent(@Valid @RequestBody DemoStudent student) {
+        return service.createStudent(student);
+    }
+
+    @PutMapping("/{id}")
+    public Optional<DemoStudent> updateStudent(@PathVariable Long id, @Valid @RequestBody DemoStudent student) {
+        return service.updateStudent(id, student);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteStudent(@PathVariable Long id) {
+        service.deleteStudent(id);
+    }
+}

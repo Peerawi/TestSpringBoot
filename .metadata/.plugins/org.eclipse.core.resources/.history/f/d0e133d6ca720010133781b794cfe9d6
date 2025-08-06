@@ -1,0 +1,57 @@
+package com.example.demo.controller;
+
+import com.example.demo.entity.DemoStudent;
+import com.example.demo.service.StudentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/students")
+public class StudentController {
+
+    private final StudentService studentService;
+
+    @Autowired
+    public StudentController(StudentService studentService) {
+        this.studentService = studentService;
+    }
+
+    // ✅ READ: ดึงข้อมูลนักเรียนทั้งหมด
+    @GetMapping
+    public List<DemoStudent> getAllStudents() {
+        return studentService.getAllStudents();
+    }
+
+    // ✅ CREATE: เพิ่มนักเรียนใหม่
+    @PostMapping
+    public DemoStudent createStudent(@RequestBody DemoStudent student) {
+        return studentService.createStudent(student);
+    }
+
+    // ✅ UPDATE: แก้ไขนักเรียนตาม id
+    @PutMapping("/{id}")
+    public DemoStudent updateStudent(@PathVariable Long id, @RequestBody DemoStudent newStudent) {
+        return studentService.updateStudent(id, newStudent);
+    }
+
+    // ✅ DELETE: ลบนักเรียนตาม id
+    @DeleteMapping("/{id}")
+    public String deleteStudent(@PathVariable Long id) {
+        return studentService.deleteStudent(id);
+    }
+
+    // ✅ FILTER & SORT: กรองตามชื่อ-นามสกุล-อายุ + จัดเรียง
+    @GetMapping("/filter")
+    public List<DemoStudent> filterStudents(
+            @RequestParam(defaultValue = "") String name,
+            @RequestParam(defaultValue = "") String surname,
+            @RequestParam(defaultValue = "0") int minAge,
+            @RequestParam(defaultValue = "200") int maxAge,
+            @RequestParam(defaultValue = "id") String sort,
+            @RequestParam(defaultValue = "asc") String dir
+    ) {
+        return studentService.filterAndSort(name, surname, minAge, maxAge, sort, dir);
+    }
+}

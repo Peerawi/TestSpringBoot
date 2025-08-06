@@ -1,10 +1,13 @@
 package com.example.demo.repository;
 
 import com.example.demo.entity.DemoStudent;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.List;
 
 public interface StudentRepository extends JpaRepository<DemoStudent, Long> {
-    // Query Method: อายุระหว่าง x ถึง y
-    List<DemoStudent> findByAgeBetween(int startAge, int endAge);
+	List<DemoStudent> findByNameContainingIgnoreCaseAndSurnameContainingIgnoreCaseAndAgeBetween(
+		    String name, String surname, int minAge, int maxAge, Sort sort
+		);
 }

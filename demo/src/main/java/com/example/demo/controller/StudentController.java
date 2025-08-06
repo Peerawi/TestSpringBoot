@@ -2,7 +2,9 @@ package com.example.demo.controller;
 
 import com.example.demo.entity.DemoStudent;
 import com.example.demo.repository.StudentRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +18,21 @@ public class StudentController {
     @Autowired
     public StudentController(StudentRepository studentRepository) {
         this.studentRepository = studentRepository;
+    }
+
+    // ✅ เพิ่มข้อมูลตัวอย่างเมื่อแอปเริ่มทำงาน (หากยังไม่มีข้อมูล)
+    @PostConstruct
+    public void initData() {
+        if (studentRepository.count() == 0) {
+            List<DemoStudent> students = List.of(
+                new DemoStudent("Robin", "Vivienne", 22),
+                new DemoStudent("Sparkle", "Lumina", 24),
+                new DemoStudent("Acheron", "Raiden", 23),
+                new DemoStudent("Black", "Swan", 25),
+                new DemoStudent("The", "Herta", 21)
+            );
+            studentRepository.saveAll(students);
+        }
     }
 
     // ✅ READ: ดึงข้อมูลนักเรียนทั้งหมด
@@ -50,11 +67,43 @@ public class StudentController {
         studentRepository.deleteById(id);
         return "ลบนักเรียนรหัส " + id + " เรียบร้อยแล้ว";
     }
+
+    // ✅ FILTER + SORT
     @GetMapping("/filter")
-    public List<DemoStudent> filterStudentsByAge(
-            @RequestParam int minAge,
-            @RequestParam int maxAge
+    public List<DemoStudent> filterStudents(
+            @RequestParam(defaultValue = "") String name,
+            @RequestParam(defaultValue = "") String surname,
+            @RequestParam(defaultValue = "0") int minAge,
+            @RequestParam(defaultValue = "200") int maxAge,
+            @RequestParam(defaultValue = "id") String sortField,
+            @RequestParam(defaultValue = "asc") String dir
     ) {
-        return studentRepository.findByAgeBetween(minAge, maxAge);
+        Sort sort = dir.equalsIgnoreCase("desc")
+                ? Sort.by(sortField).descending()
+                : Sort.by(sortField).ascending();
+
+        List<DemoStudent> results = studentRepository
+                .findByNameContainingIgnoreCaseAndSurnameContainingIgnoreCaseAndAgeBetween(
+                        name, surname, minAge, maxAge, sort
+                );
+
+        if (results.isEmpty()) {
+            StringBuilder message = new StringBuilder("ไม่พบนักเรียนตามเงื่อนไขที่ระบุ:");
+
+            if (!name.isEmpty()) {
+                message.append(" name=\"").append(name).append("\"");
+            }
+            if (!surname.isEmpty()) {
+                message.append(" surname=\"").append(surname).append("\"");
+            }
+            if (minAge > 0 || maxAge < 200) {
+                message.append(" age=[").append(minAge).append("-").append(maxAge).append("]");
+            }
+
+            throw new RuntimeException(message.toString());
+        }
+
+        return results;
     }
+
 }

@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.entity.DemoStudent;
 import com.example.demo.repository.StudentRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,7 +16,21 @@ public class StudentService {
         this.studentRepository = studentRepository;
     }
 
+    // เมธอดปกติ ใช้ดึงทั้งหมดแบบไม่มีเงื่อนไข
     public List<DemoStudent> getAllStudents() {
         return studentRepository.findAll();
+    }
+
+    // เมธอดใหม่: Filter และจัดเรียง
+    public List<DemoStudent> filterAndSort(String name, String surname, int minAge, int maxAge,
+                                           String sortField, String direction) {
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortField).descending()
+                : Sort.by(sortField).ascending();
+
+        return studentRepository
+                .findByNameContainingIgnoreCaseAndSurnameContainingIgnoreCaseAndAgeBetween(
+                        name, surname, minAge, maxAge, sort
+                );
     }
 }

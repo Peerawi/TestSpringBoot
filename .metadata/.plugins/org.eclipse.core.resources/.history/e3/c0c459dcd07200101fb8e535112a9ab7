@@ -1,0 +1,91 @@
+package com.example.demo.controller;
+
+import com.example.demo.entity.DemoStudent;
+import com.example.demo.repository.StudentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/students")
+public class StudentController {
+
+    private final StudentRepository studentRepository;
+
+    @Autowired
+    public StudentController(StudentRepository studentRepository) {
+        this.studentRepository = studentRepository;
+    }
+
+    // ✅ READ: ดึงข้อมูลนักเรียนทั้งหมด
+    @GetMapping
+    public List<DemoStudent> getAllStudents() {
+        return studentRepository.findAll();
+    }
+
+    // ✅ CREATE: เพิ่มนักเรียนใหม่
+    @PostMapping
+    public DemoStudent createStudent(@RequestBody DemoStudent student) {
+        return studentRepository.save(student);
+    }
+
+    // ✅ UPDATE: แก้ไขนักเรียนตาม id
+    @PutMapping("/{id}")
+    public DemoStudent updateStudent(@PathVariable Long id, @RequestBody DemoStudent newStudent) {
+        return studentRepository.findById(id).map(student -> {
+            student.setName(newStudent.getName());
+            student.setSurname(newStudent.getSurname());
+            student.setAge(newStudent.getAge());
+            return studentRepository.save(student);
+        }).orElseThrow(() -> new RuntimeException("ไม่พบนักเรียนรหัส: " + id));
+    }
+
+    // ✅ DELETE: ลบนักเรียนตาม id
+    @DeleteMapping("/{id}")
+    public String deleteStudent(@PathVariable Long id) {
+        if (!studentRepository.existsById(id)) {
+            throw new RuntimeException("ไม่พบนักเรียนรหัส: " + id);
+        }
+        studentRepository.deleteById(id);
+        return "ลบนักเรียนรหัส " + id + " เรียบร้อยแล้ว";
+    }
+
+    // ✅ FILTER + SORT
+    @GetMapping("/filter")
+    public List<DemoStudent> filterStudents(
+            @RequestParam(defaultValue = "") String name,
+            @RequestParam(defaultValue = "") String surname,
+            @RequestParam(defaultValue = "0") int minAge,
+            @RequestParam(defaultValue = "200") int maxAge,
+            @RequestParam(defaultValue = "id") String sortField,
+            @RequestParam(defaultValue = "asc") String dir
+    ) {
+        // ตรวจสอบชื่อ field ที่สามารถ sort ได้
+        List<String> allowedSortFields = List.of("id", "name", "surname", "age");
+        if (!allowedSortFields.contains(sortField)) {
+            throw new RuntimeException("Field '" + sortField + "' ไม่สามารถใช้ในการจัดเรียงได้");
+        }
+
+        Sort sort = dir.equalsIgnoreCase("desc")
+                ? Sort.by(sortField).descending()
+                : Sort.by(sortField).ascending();
+
+        List<DemoStudent> results = studentRepository
+                .findByNameContainingIgnoreCaseAndSurnameContainingIgnoreCaseAndAgeBetween(
+                        name, surname, minAge, maxAge, sort
+                );
+
+        if (results.isEmpty()) {
+            StringBuilder message = new StringBuilder("ไม่พบนักเรียนตามเงื่อนไขที่ระบุ:");
+            if (!name.isEmpty()) message.append(" name=\"").append(name).append("\"");
+            if (!surname.isEmpty()) message.append(" surname=\"").append(surname).append("\"");
+            message.append(" age=[").append(minAge).append("-").append(maxAge).append("]");
+            throw new RuntimeException(message.toString());
+        }
+
+        return results;
+    }
+
+}
